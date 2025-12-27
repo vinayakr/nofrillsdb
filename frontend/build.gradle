@@ -1,0 +1,41 @@
+plugins {
+    id 'com.github.node-gradle.node' version '7.0.2'
+}
+
+node {
+    // Use an embedded Node so all devs/CI are consistent
+    download = true
+    version = '20.18.0'
+    npmVersion = '10.8.2'
+    nodeProjectDir = file('.')        // the folder containing package.json
+}
+
+// Optional: faster, reproducible installs in CI
+tasks.register('npmCi', com.github.gradle.node.npm.task.NpmTask) {
+    args = ['ci']
+    inputs.file('package-lock.json')
+    inputs.file('package.json')
+    outputs.dir('node_modules')
+}
+
+// Dev server (SvelteKit)
+tasks.register('dev', com.github.gradle.node.npm.task.NpmTask) {
+    dependsOn 'npmCi'
+    args = ['run', 'dev']
+}
+
+// Production build (SvelteKit)
+tasks.register('buildFrontend', com.github.gradle.node.npm.task.NpmTask) {
+    dependsOn 'npmCi'
+    args = ['run', 'build']
+    inputs.dir('src')
+    inputs.file('svelte.config.js')
+    inputs.file('vite.config.ts')
+    inputs.file('package.json')
+    inputs.file('package-lock.json')
+    // Outputs vary by adapter:
+    // adapter-node -> "build/"
+    // adapter-static -> "build/"
+    // (adjust if you changed defaults)
+    outputs.dir('build')
+}

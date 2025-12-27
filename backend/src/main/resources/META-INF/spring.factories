@@ -1,0 +1,5 @@
+org.springframework.boot.context.config.ConfigDataLocationResolver=\
+com.nofrillsdb.config.AwsSecretsManagerConfigDataLocationResolver
+
+org.springframework.boot.context.config.ConfigDataLoader=\
+com.nofrillsdb.config.AwsSecretsManagerConfigDataLoader

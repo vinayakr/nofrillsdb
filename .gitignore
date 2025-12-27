@@ -1,0 +1,9 @@
+build/
+**/.idea/
+gradle
+**/.kotlin
+**/.codebuddy
+.claude
+**/.env*
+.gradle
+**/*.png

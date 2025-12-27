@@ -1,0 +1,37 @@
+server:
+  port: 8080
+spring:
+  web:
+    error:
+      include-message: always
+      include-binding-errors: always
+  flyway:
+    enabled: true
+  config:
+    import:
+      - "aws-secretsmanager:nofrillsdb"
+  application:
+    name: nofrillsdb
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://dev-kt2k7ccik1knq0ig.us.auth0.com/
+          audiences:
+            - https://api.nofrillsdb.com
+  cloud:
+    aws:
+      region:
+        static: us-west-2
+        auto: false
+auth0:
+  management:
+    # These will be overridden by AWS Secrets Manager if available
+    domain: ${AUTH0_MANAGEMENT_DOMAIN:}
+    client-id: ${AUTH0_MANAGEMENT_CLIENT_ID:}
+    client-secret: ${AUTH0_MANAGEMENT_CLIENT_SECRET:}
+logging:
+  level:
+    org.springframework.boot.autoconfigure.flyway: DEBUG
+    org.springframework.boot.autoconfigure.jdbc: DEBUG
+    org.flywaydb: DEBUG

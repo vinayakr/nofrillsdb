@@ -1,0 +1,11 @@
+tasks.register('buildAll') {
+    dependsOn ':backend:build', ':frontend:buildFrontend'
+}
+
+tasks.register('classes') {            // satisfy IntelliJ's call to :classes
+    dependsOn ':backend:classes'
+}
+
+tasks.register('testClasses') {            // satisfy IntelliJ's call to :classes
+    dependsOn ':backend:testClasses'
+}

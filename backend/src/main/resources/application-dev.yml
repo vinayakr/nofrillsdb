@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    username: vinayakr
+    password: ""
+    url: jdbc:postgresql://localhost:5432/nofrillsdb
+    driver-class-name: org.postgresql.Driver
+provisioning:
+  datasource:
+    username: vinayakr
+    password: ""
+    url: jdbc:postgresql://localhost:5432/postgres
+    driver-class-name: org.postgresql.Driver
