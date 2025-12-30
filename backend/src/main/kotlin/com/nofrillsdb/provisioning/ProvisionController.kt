@@ -73,32 +73,12 @@ class ProvisionController(
             """.trimIndent()
         )
 
-        /* -------------------------------------------------------------
-         * 1) Allow provisioner to SET ROLE ownerRole
-         * ------------------------------------------------------------- */
         jdbcTemplate.execute("""GRANT ${quoteIdent(ownerRole)} TO CURRENT_USER""")
 
-        /* -------------------------------------------------------------
-         * 2) Create database owned by ownerRole
-         * ------------------------------------------------------------- */
         jdbcTemplate.execute(
             """CREATE DATABASE ${quoteIdent(dbName)} OWNER ${quoteIdent(ownerRole)}"""
         )
 
-        /* -------------------------------------------------------------
-         * 3) Database-level ACLs (must be executed as DB owner)
-         * ------------------------------------------------------------- */
-        jdbcTemplate.execute("""SET ROLE ${quoteIdent(ownerRole)}""")
-        try {
-            jdbcTemplate.execute(
-                """REVOKE ALL ON DATABASE ${quoteIdent(dbName)} FROM PUBLIC"""
-            )
-            jdbcTemplate.execute(
-                """GRANT CONNECT, TEMPORARY ON DATABASE ${quoteIdent(dbName)} TO ${quoteIdent(loginRole)}"""
-            )
-        } finally {
-            jdbcTemplate.execute("""RESET ROLE""")
-        }
 
         jdbcTemplate.execute("""SET ROLE ${quoteIdent(ownerRole)}""")
         try {
@@ -113,9 +93,6 @@ class ProvisionController(
             jdbcTemplate.execute("""RESET ROLE""")
         }
 
-        /* -------------------------------------------------------------
-         * 4) Schema privileges inside the DB
-         * ------------------------------------------------------------- */
         val dbJdbc = jdbcForDatabase(dbName)
 
         dbJdbc.execute("""REVOKE ALL ON SCHEMA public FROM PUBLIC""")
@@ -123,18 +100,11 @@ class ProvisionController(
             """GRANT USAGE, CREATE ON SCHEMA public TO ${quoteIdent(loginRole)}"""
         )
 
-        /* -------------------------------------------------------------
-         * 5) Persist metadata
-         * ------------------------------------------------------------- */
         user.databases += Database(dbName)
         userRepository.save(user)
 
         return CreateDBResponse(dbName)
     }
-
-    /* =============================================================
-     * Credential / role endpoints (unchanged behavior)
-     * ============================================================= */
 
     @GetMapping("/crt")
     @PreAuthorize("isAuthenticated()")
@@ -147,9 +117,9 @@ class ProvisionController(
             """
             DO $$ 
             BEGIN
-                CREATE ROLE ${quoteIdent(issued.role)} LOGIN PASSWORD NULL;
+                CREATE ROLE ${quoteIdent(issued.role)} LOGIN;
             EXCEPTION WHEN duplicate_object THEN
-                ALTER ROLE ${quoteIdent(issued.role)} LOGIN PASSWORD NULL;
+                ALTER ROLE ${quoteIdent(issued.role)} LOGIN;
             END 
             $$;
             """.trimIndent()
