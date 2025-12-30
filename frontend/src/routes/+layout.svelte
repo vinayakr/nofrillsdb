@@ -5,7 +5,7 @@
     import { page } from '$app/stores';
     import {
         login, logout, getUser, loggedIn,
-        handleRedirectIfPresent
+        handleRedirectIfPresent, signUp
     } from '$lib/auth';
 
     let user: any = null;
@@ -50,6 +50,11 @@
         }
     }
 
+
+    function handleSignUp() {
+        signUp('/register');
+    }
+
     function toggleMobileMenu() {
         mobileMenuOpen = !mobileMenuOpen;
     }
@@ -89,12 +94,20 @@
                         </button>
                     </div>
                 {:else}
-                    <button
-                        on:click={handleAuth}
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                    >
-                        Login
-                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button
+                                on:click={handleSignUp}
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                        >
+                            Sign Up
+                        </button>
+                        <button
+                            on:click={handleAuth}
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                        >
+                            Login
+                        </button>
+                    </div>
                 {/if}
             </div>
 

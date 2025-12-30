@@ -1,5 +1,6 @@
 package com.nofrillsdb.config
 
+import com.zaxxer.hikari.HikariDataSource
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties
@@ -32,9 +33,13 @@ class DatabaseConfig {
     fun provisioningDataSourceProperties() = DataSourceProperties()
 
     @Bean(name = ["provisionDataSource"])
+    @ConfigurationProperties("provisioning.datasource.hikari")
     fun provisionDataSource(
         @Qualifier("provisioningDataSourceProperties") props: DataSourceProperties
-    ): DataSource = props.initializeDataSourceBuilder().build()
+    ): DataSource =
+        props.initializeDataSourceBuilder()
+            .type(HikariDataSource::class.java)
+            .build()
 
     @Bean
     fun provisionJdbcTemplate(@Qualifier("provisionDataSource") ds: DataSource) =

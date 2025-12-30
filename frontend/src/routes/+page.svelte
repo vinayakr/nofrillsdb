@@ -7,8 +7,5 @@
         isAuthenticated = value;
     });
 
-    function handleSignUp() {
-        signUp('/register');
-    }
 </script>
 

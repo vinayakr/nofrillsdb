@@ -1,13 +1,13 @@
 package com.nofrillsdb.user
 
 import com.nofrillsdb.auth.Auth0ManagementService
-import com.nofrillsdb.exceptions.UnauthorizedException
+import com.nofrillsdb.user.exception.UnauthorizedException
 import com.nofrillsdb.registration.RegistrationStatusResponse
 import com.nofrillsdb.registration.UserProfileResponse
 import com.nofrillsdb.utils.Auth0TokenValidator
 import com.nofrillsdb.utils.JWTUtils
 import com.nofrillsdb.utils.JWTUtils.Companion.extractToken
-import com.privatehomedeals.users.UserNotFoundException
+import com.nofrillsdb.user.exception.UserNotFoundException
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank

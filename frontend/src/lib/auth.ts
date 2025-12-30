@@ -124,7 +124,7 @@ export async function authenticatedFetch(
     const token = await getTokenSilently(false); // or pass a flag as you need
     const f = fetchImpl ?? fetch;
 
-    const headers: Record<string, string> = {
+    const headers: HeadersInit = {
         Authorization: `Bearer ${token}`,
         ...(options.headers ?? {})
     };

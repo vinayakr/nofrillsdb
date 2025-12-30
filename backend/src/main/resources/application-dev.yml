@@ -6,7 +6,16 @@ spring:
     driver-class-name: org.postgresql.Driver
 provisioning:
   datasource:
-    username: vinayakr
-    password: ""
-    url: jdbc:postgresql://localhost:5432/postgres
     driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:16432/postgres?sslmode=verify-ca
+    username: provisioner
+    password: ""   # unused with mTLS
+    hikari:
+      data-source-properties:
+        sslrootcert: /Users/vinayakr/workspace/nofrillsdb/database/local/certs/clients_ca.crt
+        sslcert: /Users/vinayakr/workspace/nofrillsdb/database/local/certs/provisioner.crt
+        sslkey: /Users/vinayakr/workspace/nofrillsdb/database/local/certs/provisioner.pk8.der
+  client-ca-key: ${CLIENT_CA_KEY}
+  connection-limit: 20
+  statement-timeout: 10s
+  pool-user: pgbouncer_auth

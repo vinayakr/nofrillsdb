@@ -1,11 +1,11 @@
 package com.nofrillsdb.user
 
 import com.nofrillsdb.auth.Auth0ManagementService
-import com.nofrillsdb.exceptions.UserAlreadyExistsException
+import com.nofrillsdb.user.exception.UserAlreadyExistsException
 import com.nofrillsdb.user.repository.UserRepository
 import com.nofrillsdb.users.model.db.User
 import com.nofrillsdb.utils.Auth0TokenValidator
-import com.privatehomedeals.users.UserNotFoundException
+import com.nofrillsdb.user.exception.UserNotFoundException
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 

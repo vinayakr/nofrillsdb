@@ -1,7 +1,5 @@
 package com.nofrillsdb.utils
 
-import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.security.oauth2.jwt.Jwt
 
 class JWTUtils {

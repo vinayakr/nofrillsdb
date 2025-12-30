@@ -7,3 +7,7 @@ gradle
 **/.env*
 .gradle
 **/*.png
+**/*.env
+**/*.key
+**/*.csr
+**/*.der

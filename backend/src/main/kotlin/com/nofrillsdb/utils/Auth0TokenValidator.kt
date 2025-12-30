@@ -13,6 +13,9 @@ class Auth0TokenValidator {
     @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
     private lateinit var issuerUri: String
 
+    @Value("\${spring.security.oauth2.resourceserver.jwt.audiences[0]}")
+    lateinit var audience: String
+
     private val jwtDecoder: JwtDecoder by lazy {
         JwtDecoders.fromIssuerLocation(issuerUri)
     }
@@ -29,6 +32,11 @@ class Auth0TokenValidator {
             if (jwt.audience?.isEmpty() != false) {
                 throw SecurityException("Token has no audience")
             }
+
+            if (!jwt.audience.contains(audience)) {
+                throw SecurityException("Invalid audience")
+            }
+
 
             return jwt
         } catch (e: Exception) {
