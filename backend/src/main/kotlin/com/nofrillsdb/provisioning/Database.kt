@@ -1,6 +1,8 @@
 package com.nofrillsdb.provisioning
 
-data class Database(var name: String = "") {
+import java.time.Instant
+
+data class Database(var name: String = "", var createdAt: Instant = Instant.now()) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

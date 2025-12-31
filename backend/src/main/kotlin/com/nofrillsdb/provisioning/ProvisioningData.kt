@@ -25,3 +25,10 @@ data class IssuedClientCredential(
     val issuedAt: Instant,
     val expiresAt: Instant,
 )
+
+data class CrtMetadataResponse (
+    val serialHex: String,
+    val fingerprint: String,
+    val issuedAt: Instant,
+    val expiresAt: Instant
+)

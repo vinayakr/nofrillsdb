@@ -1,0 +1,1 @@
+"pgbouncer_auth" "vs59DMG3o@p9O6ap"
