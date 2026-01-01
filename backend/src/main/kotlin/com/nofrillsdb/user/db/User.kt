@@ -26,6 +26,7 @@ data class User(
     val email: String = "",
     val name: String? = null,
     var role: String? = null,
+    var crtRole: String? = null,
     var serial: String? = null,
     var fingerprint: String? = null,
     var issuedAt: Instant? = null,

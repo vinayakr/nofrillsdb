@@ -6,7 +6,6 @@
 
     let user: any = null;
     let databases: any[] = [];
-    let certMetadata: any = null;
     let showCreateForm = false;
     let showPasswordWarning = false;
     let showCertWarning = false;
@@ -16,6 +15,15 @@
     let generatingCert = false;
     let loading = true;
     let error = '';
+
+    // Check if user has authentication credentials
+    $: hasCredentials = hasCertificate || hasPassword;
+    $: hasPassword = user?.role;
+    $: hasCertificate = user?.serial && user?.fingerprint && user?.issuedAt && user?.expiresAt;
+
+    // Environment variables for JDBC endpoints
+    const jdbcPasswordEndpoint = import.meta.env.VITE_JDBC_PWD_ENDPOINT;
+    const jdbcCertEndpoint = import.meta.env.VITE_JDBC_CRT_ENDPOINT;
 
     onMount(async () => {
         // Check authentication status before proceeding
@@ -39,7 +47,14 @@
         error = '';
 
         try {
-            user = await getUser();
+            // Load user data from backend API to get role information
+            const userResponse = await authenticatedFetch('/api/user/details');
+            if (userResponse.ok) {
+                user = await userResponse.json();
+            } else {
+                // Fallback to Auth0 user if backend fails
+                user = await getUser();
+            }
 
             // Load databases from the new API endpoint
             const dbResponse = await authenticatedFetch('/api/provision/database', {
@@ -51,22 +66,6 @@
             } else {
                 // Fall back to user object if API fails
                 databases = user.databases || [];
-            }
-
-            // Try to load certificate metadata
-            try {
-                const certResponse = await authenticatedFetch('/api/provision/crt', {
-                    method: 'GET'
-                });
-
-                if (certResponse.ok) {
-                    certMetadata = await certResponse.json();
-                } else {
-                    certMetadata = null;
-                }
-            } catch {
-                // No certificate exists yet, that's fine
-                certMetadata = null;
             }
         } catch (err) {
             error = 'Failed to load data';
@@ -234,33 +233,108 @@
                 </button>
             </div>
 
+            <!-- Current Password Info -->
+            {#if hasPassword}
+                <div class="border-t border-gray-200 pt-4 mb-4">
+                    <h3 class="text-sm font-medium text-gray-900 mb-3">Current Password</h3>
+                    <div class="flex items-center space-x-3">
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm text-gray-900">Password authentication is active</span>
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            Role: <span class="font-mono text-xs">{user.role}</span>
+                        </div>
+                    </div>
+                    {#if jdbcPasswordEndpoint}
+                        <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <h4 class="text-sm font-medium text-blue-800 mb-2">JDBC Connection URL</h4>
+                            <div class="flex items-center space-x-2">
+                                <code class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded font-mono break-all">
+                                    jdbc:postgresql://{jdbcPasswordEndpoint}/[database_name]?user={user.role}&password=[your_password]
+                                </code>
+                                <button
+                                    on:click={() => navigator.clipboard.writeText(`jdbc:postgresql://${jdbcPasswordEndpoint}/[database_name]?user=${user.role}&password=[your_password]`)}
+                                    class="flex-shrink-0 p-1 text-blue-600 hover:text-blue-800"
+                                    title="Copy to clipboard"
+                                >
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path>
+                                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+            {:else}
+                <div class="border-t border-gray-200 pt-4 mb-4">
+                    <p class="text-sm text-gray-500">No password generated yet. Generate one to see details.</p>
+                </div>
+            {/if}
+
             <!-- Current Certificate Info -->
-            {#if certMetadata}
+            {#if hasCertificate}
                 <div class="border-t border-gray-200 pt-4">
                     <h3 class="text-sm font-medium text-gray-900 mb-3">Current Certificate</h3>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-sm text-gray-900">Certificate authentication is active</span>
+                        </div>
+                        {#if user.crtRole}
+                            <div class="text-sm text-gray-500">
+                                Role: <span class="font-mono text-xs">{user.crtRole}</span>
+                            </div>
+                        {/if}
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
                             <dt class="font-medium text-gray-500">Serial Number</dt>
-                            <dd class="mt-1 text-gray-900 font-mono text-xs">{certMetadata.serial}</dd>
+                            <dd class="mt-1 text-gray-900 font-mono text-xs">{user.serial}</dd>
                         </div>
                         <div>
                             <dt class="font-medium text-gray-500">Fingerprint</dt>
-                            <dd class="mt-1 text-gray-900 font-mono text-xs break-all">{certMetadata.fingerprint}</dd>
+                            <dd class="mt-1 text-gray-900 font-mono text-xs break-all">{user.fingerprint}</dd>
                         </div>
                         <div>
                             <dt class="font-medium text-gray-500">Issued</dt>
-                            <dd class="mt-1 text-gray-900">{new Date(certMetadata.issuedAt).toLocaleDateString()}</dd>
+                            <dd class="mt-1 text-gray-900">{new Date(user.issuedAt).toLocaleDateString()}</dd>
                         </div>
                         <div>
                             <dt class="font-medium text-gray-500">Expires</dt>
-                            <dd class="mt-1 text-gray-900">{new Date(certMetadata.expiresAt).toLocaleDateString()}</dd>
+                            <dd class="mt-1 text-gray-900">{new Date(user.expiresAt).toLocaleDateString()}</dd>
                         </div>
                     </div>
-                    {#if new Date(certMetadata.expiresAt) < new Date()}
+                    {#if jdbcCertEndpoint}
+                        <div class="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                            <h4 class="text-sm font-medium text-green-800 mb-2">JDBC Connection URL</h4>
+                            <div class="flex items-center space-x-2">
+                                <code class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-mono break-all">
+                                    jdbc:postgresql://{jdbcCertEndpoint}/[database_name]?ssl=true&sslcert=[cert_file]&sslkey=[key_file]
+                                </code>
+                                <button
+                                    on:click={() => navigator.clipboard.writeText(`jdbc:postgresql://${jdbcCertEndpoint}/[database_name]?ssl=true&sslcert=[cert_file]&sslkey=[key_file]`)}
+                                    class="flex-shrink-0 p-1 text-green-600 hover:text-green-800"
+                                    title="Copy to clipboard"
+                                >
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path>
+                                        <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    {/if}
+                    {#if new Date(user.expiresAt) < new Date()}
                         <div class="mt-3 p-2 bg-red-50 border border-red-200 rounded-md">
                             <p class="text-sm text-red-600">⚠️ This certificate has expired</p>
                         </div>
-                    {:else if new Date(certMetadata.expiresAt) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)}
+                    {:else if new Date(user.expiresAt) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)}
                         <div class="mt-3 p-2 bg-amber-50 border border-amber-200 rounded-md">
                             <p class="text-sm text-amber-600">⚠️ This certificate will expire soon</p>
                         </div>
@@ -281,12 +355,22 @@
                 <h2 class="text-lg font-medium text-gray-900">Your Databases</h2>
                 <p class="text-sm text-gray-500">Manage your database instances</p>
             </div>
-            <button
-                on:click={() => showCreateForm = true}
-                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-                Create Database
-            </button>
+            <div class="relative group">
+                <button
+                    on:click={() => hasCredentials && (showCreateForm = true)}
+                    disabled={!hasCredentials}
+                    class="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    title={hasCredentials ? "Create a new database" : "Generate authentication credentials first"}
+                >
+                    Create Database
+                </button>
+                {#if !hasCredentials}
+                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10 pointer-events-none">
+                        Generate authentication credentials first
+                        <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-900"></div>
+                    </div>
+                {/if}
+            </div>
         </div>
 
         <div class="px-6 py-4">

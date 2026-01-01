@@ -21,7 +21,6 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.*
-import jakarta.validation.Valid
 import java.io.ByteArrayOutputStream
 import java.security.SecureRandom
 import java.util.zip.ZipEntry
@@ -44,10 +43,9 @@ class ProvisionController(
     @Value("\${provisioning.pool-user}")
     private val poolUser: String = "pgbouncer_auth"
 
-
     @GetMapping("/database")
     @PreAuthorize("isAuthenticated()")
-    fun getDatabases(@AuthenticationPrincipal jwt: Jwt) : Set<Database> {
+    fun getDatabases(@AuthenticationPrincipal jwt: Jwt): Set<Database> {
         val user = getUser(jwt)
         return user.databases
     }
@@ -55,27 +53,36 @@ class ProvisionController(
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     fun createDatabase(
-        @Valid @RequestBody req: CreateDBRequest,
+        @RequestBody req: CreateDBRequest,
         @AuthenticationPrincipal jwt: Jwt
     ): CreateDBResponse {
 
         val user = getUser(jwt)
 
         val dbName = req.name.trim()
-        val loginRole = user.role ?: throw RoleNotFoundException("Role not found")
-        val ownerRole = "owner_$loginRole"
+
+        // Password role is the stable base
+        val pwdRole = user.role ?: throw RoleNotFoundException("Password role not found (user.role is null)")
+
+        // Privileges and ownership are tied to pwdRole
+        val privRole = "priv_$pwdRole"
+        val ownerRole = "owner_$pwdRole"
 
         if (user.databases.any { it.name == dbName }) {
             throw DatabaseAlreadyExistsException("Database $dbName already exists")
         }
 
         /* -------------------------------------------------------------
-         * 0) Ensure owner role exists
+         * 0) Ensure priv + owner roles exist
          * ------------------------------------------------------------- */
         jdbcTemplate.execute(
             """
             DO $$
             BEGIN
+              IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${pgLiteral(privRole)}) THEN
+                EXECUTE 'CREATE ROLE ${quoteIdent(privRole)} NOLOGIN';
+              END IF;
+
               IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${pgLiteral(ownerRole)}) THEN
                 EXECUTE 'CREATE ROLE ${quoteIdent(ownerRole)} NOLOGIN';
               END IF;
@@ -84,22 +91,26 @@ class ProvisionController(
             """.trimIndent()
         )
 
+        // Allow provisioning user to SET ROLE ownerRole
         jdbcTemplate.execute("""GRANT ${quoteIdent(ownerRole)} TO CURRENT_USER""")
 
         jdbcTemplate.execute(
             """CREATE DATABASE ${quoteIdent(dbName)} OWNER ${quoteIdent(ownerRole)}"""
         )
 
-
         jdbcTemplate.execute("""SET ROLE ${quoteIdent(ownerRole)}""")
         try {
             jdbcTemplate.execute("""REVOKE ALL ON DATABASE ${quoteIdent(dbName)} FROM PUBLIC""")
 
-            // allow tenant role (for direct connections, or future use)
-            jdbcTemplate.execute("""GRANT CONNECT, TEMPORARY ON DATABASE ${quoteIdent(dbName)} TO ${quoteIdent(loginRole)}""")
+            // Grant access to priv role (NOT directly to login roles)
+            jdbcTemplate.execute(
+                """GRANT CONNECT, TEMPORARY ON DATABASE ${quoteIdent(dbName)} TO ${quoteIdent(privRole)}"""
+            )
 
             // allow pgbouncer pool user (required for *connections via pgbouncer*)
-            jdbcTemplate.execute("""GRANT CONNECT, TEMPORARY ON DATABASE ${quoteIdent(dbName)} TO ${quoteIdent(poolUser)}""")
+            jdbcTemplate.execute(
+                """GRANT CONNECT, TEMPORARY ON DATABASE ${quoteIdent(dbName)} TO ${quoteIdent(poolUser)}"""
+            )
         } finally {
             jdbcTemplate.execute("""RESET ROLE""")
         }
@@ -109,10 +120,9 @@ class ProvisionController(
         try {
             dbJdbc.execute("""REVOKE ALL ON SCHEMA public FROM PUBLIC""")
             dbJdbc.execute(
-                """GRANT USAGE, CREATE ON SCHEMA public TO ${quoteIdent(loginRole)}"""
+                """GRANT USAGE, CREATE ON SCHEMA public TO ${quoteIdent(privRole)}"""
             )
         } finally {
-            // Close the connection pool to prevent holding connections open
             val dataSource = dbJdbc.dataSource as? com.zaxxer.hikari.HikariDataSource
             dataSource?.close()
         }
@@ -128,7 +138,7 @@ class ProvisionController(
     fun getCertificate(@AuthenticationPrincipal jwt: Jwt): CrtMetadataResponse {
         val user = getUser(jwt)
 
-        if (user.serial == null || user.fingerprint == null ||user.issuedAt == null || user.expiresAt == null) {
+        if (user.serial == null || user.fingerprint == null || user.issuedAt == null || user.expiresAt == null) {
             throw CrtNotFoundException("No CRT found for ${user.id}")
         }
 
@@ -137,34 +147,69 @@ class ProvisionController(
             user.fingerprint!!,
             user.issuedAt!!,
             user.expiresAt!!
-        );
+        )
     }
-
 
     @PostMapping("/crt")
     @PreAuthorize("isAuthenticated()")
     fun createCert(@AuthenticationPrincipal jwt: Jwt): ResponseEntity<ByteArrayResource> {
         val user = getUser(jwt)
-        val role = user.role ?: credentialIssuer.generateRoleId()
-        val issued = credentialIssuer.issueClientCredential(role)
 
+        // Stable base is password role
+        val pwdRole = user.role ?: throw RoleNotFoundException("Password role not found (user.role is null)")
+        val privRole = "priv_$pwdRole"
+
+        // ROTATE: always create a new CRT role
+        val oldCrtRole = user.crtRole
+        val crtRole = "crt_${credentialIssuer.generateRoleId()}"
+
+        user.crtRole = crtRole
+        userRepository.save(user)
+
+        val issued = credentialIssuer.issueClientCredential(crtRole)
+
+        // Ensure CRT login role exists
         jdbcTemplate.execute(
             """
-            DO $$ 
-            BEGIN
-                CREATE ROLE ${quoteIdent(issued.role)} LOGIN;
-            EXCEPTION WHEN duplicate_object THEN
-                ALTER ROLE ${quoteIdent(issued.role)} LOGIN;
-            END 
-            $$;
-            """.trimIndent()
-        )
-        jdbcTemplate.execute("ALTER ROLE ${quoteIdent(issued.role)} NOINHERIT")
-        jdbcTemplate.execute("ALTER ROLE ${quoteIdent(issued.role)} CONNECTION LIMIT $connectionLimit")
-        jdbcTemplate.execute(
-            "ALTER ROLE ${quoteIdent(issued.role)} SET statement_timeout = ${pgLiteral(statementTimeout ?: "10s")}"
+        DO $$ 
+        BEGIN
+            CREATE ROLE ${quoteIdent(crtRole)} LOGIN;
+        EXCEPTION WHEN duplicate_object THEN
+            ALTER ROLE ${quoteIdent(crtRole)} LOGIN;
+        END 
+        $$;
+        """.trimIndent()
         )
 
+        // Ensure priv role exists (NOLOGIN)
+        jdbcTemplate.execute(
+            """
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${pgLiteral(privRole)}) THEN
+            EXECUTE 'CREATE ROLE ${quoteIdent(privRole)} NOLOGIN';
+          END IF;
+        END
+        $$;
+        """.trimIndent()
+        )
+
+        // Membership so CRT role inherits privileges
+        jdbcTemplate.execute("""GRANT ${quoteIdent(privRole)} TO ${quoteIdent(crtRole)}""")
+        jdbcTemplate.execute("""ALTER ROLE ${quoteIdent(crtRole)} INHERIT""")
+
+        // Apply settings
+        jdbcTemplate.execute("""ALTER ROLE ${quoteIdent(crtRole)} CONNECTION LIMIT $connectionLimit""")
+        jdbcTemplate.execute(
+            """ALTER ROLE ${quoteIdent(crtRole)} SET statement_timeout = ${pgLiteral(statementTimeout ?: "10s")}"""
+        )
+
+        // OPTIONAL: immediately invalidate previous cert/role by disabling old role
+        if (!oldCrtRole.isNullOrBlank() && oldCrtRole != crtRole) {
+            jdbcTemplate.execute("""ALTER ROLE ${quoteIdent(oldCrtRole)} NOLOGIN""")
+        }
+
+        // Store metadata for "current" cert
         user.expiresAt = issued.expiresAt
         user.serial = issued.serialHex
         user.fingerprint = issued.fingerprintSha256Hex
@@ -172,14 +217,14 @@ class ProvisionController(
         userRepository.save(user)
 
         val zipBytes = createCredentialZip(
-            issued.role,
+            crtRole,
             issued.privateKeyPem,
             issued.certificatePem
         )
 
         val headers = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_OCTET_STREAM
-            setContentDispositionFormData("attachment", "${issued.role}_credentials.zip")
+            setContentDispositionFormData("attachment", "${crtRole}_credentials.zip")
         }
 
         return ResponseEntity.ok()
@@ -191,37 +236,60 @@ class ProvisionController(
     @PreAuthorize("isAuthenticated()")
     fun createPassword(@AuthenticationPrincipal jwt: Jwt): ResponseEntity<ByteArrayResource> {
         val user = getUser(jwt)
-        val role = user.role ?: credentialIssuer.generateRoleId()
+
+        // Password role is stable
+        val pwdRole = user.role ?: credentialIssuer.generateRoleId()
+        val privRole = "priv_$pwdRole"
+
         val password = generateSecurePassword()
 
         if (user.role == null) {
-            user.role = role
+            user.role = pwdRole
             userRepository.save(user)
         }
 
+        // Ensure priv role exists
+        jdbcTemplate.execute(
+            """
+            DO $$
+            BEGIN
+              IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${pgLiteral(privRole)}) THEN
+                EXECUTE 'CREATE ROLE ${quoteIdent(privRole)} NOLOGIN';
+              END IF;
+            END
+            $$;
+            """.trimIndent()
+        )
+
+        // Ensure password login role exists + set password
         jdbcTemplate.execute(
             """
             DO $$ 
             BEGIN
-                CREATE ROLE ${quoteIdent(role)} LOGIN PASSWORD ${pgLiteral(password)};
+                CREATE ROLE ${quoteIdent(pwdRole)} LOGIN PASSWORD ${pgLiteral(password)};
             EXCEPTION WHEN duplicate_object THEN
-                ALTER ROLE ${quoteIdent(role)} LOGIN PASSWORD ${pgLiteral(password)};
+                ALTER ROLE ${quoteIdent(pwdRole)} LOGIN PASSWORD ${pgLiteral(password)};
             END 
             $$;
             """.trimIndent()
         )
-        jdbcTemplate.execute("ALTER ROLE ${quoteIdent(role)} NOINHERIT")
-        jdbcTemplate.execute("ALTER ROLE ${quoteIdent(role)} CONNECTION LIMIT $connectionLimit")
+
+        // Ensure membership so password role inherits privileges
+        jdbcTemplate.execute("""GRANT ${quoteIdent(privRole)} TO ${quoteIdent(pwdRole)}""")
+        jdbcTemplate.execute("ALTER ROLE ${quoteIdent(pwdRole)} INHERIT")
+
+        // Your existing limits/settings
+        jdbcTemplate.execute("ALTER ROLE ${quoteIdent(pwdRole)} CONNECTION LIMIT $connectionLimit")
         jdbcTemplate.execute(
-            "ALTER ROLE ${quoteIdent(role)} SET statement_timeout = ${pgLiteral(statementTimeout ?: "10s")}"
+            "ALTER ROLE ${quoteIdent(pwdRole)} SET statement_timeout = ${pgLiteral(statementTimeout ?: "10s")}"
         )
 
-        val credentialsContent = "Role: $role\nPassword: $password\n"
+        val credentialsContent = "Role: $pwdRole\nPassword: $password\n"
         val credentialsBytes = credentialsContent.toByteArray()
 
         val headers = HttpHeaders().apply {
             contentType = MediaType.APPLICATION_OCTET_STREAM
-            setContentDispositionFormData("attachment", "${role}_credentials.txt")
+            setContentDispositionFormData("attachment", "${pwdRole}_credentials.txt")
         }
 
         return ResponseEntity.ok()
@@ -237,9 +305,41 @@ class ProvisionController(
         if (user.role != null) {
             throw RoleAlreadyExistsException("Role ${user.role} already exists")
         }
-        val role = credentialIssuer.generateRoleId()
-        user.role = role
+
+        // Stable base password role
+        val pwdRole = credentialIssuer.generateRoleId()
+        val privRole = "priv_$pwdRole"
+        val ownerRole = "owner_$pwdRole"
+
+        user.role = pwdRole
         userRepository.save(user)
+
+        // Create priv + owner (NOLOGIN) and pwdRole (LOGIN)
+        jdbcTemplate.execute(
+            """
+            DO $$
+            BEGIN
+              IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${pgLiteral(privRole)}) THEN
+                EXECUTE 'CREATE ROLE ${quoteIdent(privRole)} NOLOGIN';
+              END IF;
+
+              IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${pgLiteral(ownerRole)}) THEN
+                EXECUTE 'CREATE ROLE ${quoteIdent(ownerRole)} NOLOGIN';
+              END IF;
+
+              IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = ${pgLiteral(pwdRole)}) THEN
+                EXECUTE 'CREATE ROLE ${quoteIdent(pwdRole)} LOGIN';
+              ELSE
+                EXECUTE 'ALTER ROLE ${quoteIdent(pwdRole)} LOGIN';
+              END IF;
+
+              -- Membership: pwdRole inherits privileges
+              EXECUTE 'GRANT ${quoteIdent(privRole)} TO ${quoteIdent(pwdRole)}';
+              EXECUTE 'ALTER ROLE ${quoteIdent(pwdRole)} INHERIT';
+            END
+            $$;
+            """.trimIndent()
+        )
     }
 
     /* =============================================================
@@ -247,9 +347,7 @@ class ProvisionController(
      * ============================================================= */
 
     private fun jdbcForDatabase(dbName: String): JdbcTemplate {
-        val provisioningHikari =
-            jdbcTemplate.dataSource as com.zaxxer.hikari.HikariDataSource
-
+        val provisioningHikari = jdbcTemplate.dataSource as com.zaxxer.hikari.HikariDataSource
         val newUrl = replaceJdbcDatabase(provisioningHikari.jdbcUrl, dbName)
 
         val cfg = com.zaxxer.hikari.HikariConfig().apply {
@@ -257,9 +355,7 @@ class ProvisionController(
             driverClassName = provisioningHikari.driverClassName
             username = provisioningHikari.username
             password = provisioningHikari.password
-
             dataSourceProperties.putAll(provisioningHikari.dataSourceProperties)
-
             maximumPoolSize = 1
             minimumIdle = 0
             poolName = "prov-$dbName"
@@ -270,9 +366,7 @@ class ProvisionController(
     }
 
     private fun replaceJdbcDatabase(jdbcUrl: String, dbName: String): String {
-        require(jdbcUrl.startsWith("jdbc:postgresql:")) {
-            "Not a postgres JDBC url: $jdbcUrl"
-        }
+        require(jdbcUrl.startsWith("jdbc:postgresql:")) { "Not a postgres JDBC url: $jdbcUrl" }
 
         val uri = java.net.URI(jdbcUrl.removePrefix("jdbc:"))
         val host = uri.host ?: error("Missing host in $jdbcUrl")
@@ -296,9 +390,7 @@ class ProvisionController(
     private fun generateSecurePassword(): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
         val random = SecureRandom()
-        return (1..16)
-            .map { chars[random.nextInt(chars.length)] }
-            .joinToString("")
+        return (1..16).map { chars[random.nextInt(chars.length)] }.joinToString("")
     }
 
     private fun createCredentialZip(
@@ -327,14 +419,12 @@ class ProvisionController(
 
     private fun quoteIdent(ident: String): String = "\"$ident\""
 
-    private fun pgLiteral(s: String): String =
-        "'" + s.replace("'", "''") + "'"
+    private fun pgLiteral(s: String): String = "'" + s.replace("'", "''") + "'"
 
-    private fun getUser( @AuthenticationPrincipal jwt: Jwt): User {
+    private fun getUser(@AuthenticationPrincipal jwt: Jwt): User {
         val userId = JWTUtils.getUserId(jwt)
-        val user = userRepository.findById(userId).orElseThrow {
+        return userRepository.findById(userId).orElseThrow {
             UserNotFoundException("User $userId not found")
         }
-        return user;
     }
 }

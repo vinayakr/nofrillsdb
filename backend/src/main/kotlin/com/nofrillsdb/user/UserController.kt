@@ -8,12 +8,14 @@ import com.nofrillsdb.utils.Auth0TokenValidator
 import com.nofrillsdb.utils.JWTUtils
 import com.nofrillsdb.utils.JWTUtils.Companion.extractToken
 import com.nofrillsdb.user.exception.UserNotFoundException
+import com.nofrillsdb.provisioning.Database
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.web.bind.annotation.*
+import java.time.Instant
 
 @RestController
 @RequestMapping("/api/user")
@@ -91,6 +93,28 @@ class UserController(
         }
     }
 
+    @GetMapping("/details")
+    fun getCurrentUserDetails(@AuthenticationPrincipal jwt: Jwt): UserDetailsResponse {
+        val userId = JWTUtils.getUserId(jwt);
+        if (userManager.doesUserExist(userId)) {
+            val existingUser = userManager.getUserById(userId)
+            return UserDetailsResponse(
+                id = existingUser.id,
+                email = existingUser.email,
+                name = existingUser.name,
+                role = existingUser.role,
+                crtRole = existingUser.crtRole,
+                databases = existingUser.databases,
+                serial = existingUser.serial,
+                fingerprint = existingUser.fingerprint,
+                issuedAt = existingUser.issuedAt,
+                expiresAt = existingUser.expiresAt
+            )
+        } else {
+            throw UserNotFoundException("User not found. Please complete registration first.")
+        }
+    }
+
     @PutMapping("/profile")
     fun updateCurrentUserProfile(
         @Valid @RequestBody request: UserUpdateRequest,
@@ -128,4 +152,17 @@ data class EmailRequest(
     @field:NotBlank(message = "Email is required")
     @field:Email(message = "Email should be valid")
     val email: String
+)
+
+data class UserDetailsResponse(
+    val id: Long?,
+    val email: String,
+    val name: String?,
+    val role: String?,
+    val crtRole: String?,
+    val databases: Set<Database>,
+    val serial: String?,
+    val fingerprint: String?,
+    val issuedAt: Instant?,
+    val expiresAt: Instant?
 )
