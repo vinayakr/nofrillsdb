@@ -1,5 +1,4 @@
 <script lang="ts">
-    import 'mapbox-gl/dist/mapbox-gl.css';
     import '../app.css';
     import { onMount } from 'svelte';
     import { page } from '$app/stores';
@@ -77,6 +76,9 @@
                         <a href="/databases" class="{$page.url.pathname === '/databases' ? 'border-indigo-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
                             Databases
                         </a>
+                        <a href="/payments" class="{$page.url.pathname === '/payments' ? 'border-indigo-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+                            Payments
+                        </a>
                         <a href="/profile" class="{$page.url.pathname === '/profile' ? 'border-indigo-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
                             Profile
                         </a>
@@ -144,6 +146,9 @@
             {#if isAuthenticated}
                 <a href="/databases" class="{$page.url.pathname === '/databases' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
                     Databases
+                </a>
+                <a href="/payments" class="{$page.url.pathname === '/payments' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
+                    Payments
                 </a>
                 <a href="/profile" class="{$page.url.pathname === '/profile' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
                     Profile

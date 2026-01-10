@@ -32,5 +32,5 @@ data class User(
     var issuedAt: Instant? = null,
     var expiresAt: Instant? = null,
     @JdbcTypeCode(SqlTypes.JSON)
-    var databases: Set<Database> = mutableSetOf()
+    var databases: MutableSet<Database> = mutableSetOf()
 )

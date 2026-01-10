@@ -39,3 +39,5 @@ provisioning:
   datasource:
     hikari:
       maximum-pool-size: 5
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:}

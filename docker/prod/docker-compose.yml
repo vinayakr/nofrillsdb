@@ -1,0 +1,49 @@
+services:
+  nofrillsdb-frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT}:${PORT}"
+      - "${SECURE_PORT}:${SECURE_PORT}"
+    environment:
+      - BACKEND_URL=${BACKEND_URL}
+      - PORT=${PORT}
+      - SECURE_PORT=${SECURE_PORT}
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: "172.28.1.100:24224"
+        tag: "nofrillsdb.frontend"
+    networks:
+      nofrillsdb-network:
+        ipv4_address: 172.28.1.10
+  nofrillsdb-backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+    depends_on:
+      - nofrillsdb-redis
+    ports:
+      - "8443:8443"
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: "172.28.1.100:24224"
+        tag: "nofrillsdb.backend"
+    networks:
+      nofrillsdb-network:
+        ipv4_address: 172.28.1.102
+    environment:
+      - AWS_PROFILE=${AWS_PROFILE}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+  nofrillsdb-redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    networks:
+      - nofrillsdb-network
+    restart: unless-stopped
+networks:
+  nofrillsdb-network:
+    external: true

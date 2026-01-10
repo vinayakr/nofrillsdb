@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      # Update these with your production values
+      - PUBLIC_API_BASE_URL=http://localhost:8080
+      - PUBLIC_AUTH0_DOMAIN=your-domain.auth0.com
+      - PUBLIC_AUTH0_CLIENT_ID=your-client-id
+      - PUBLIC_AUTH0_AUDIENCE=your-audience
+      - PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_key
+      - PUBLIC_APP_NAME=No-Frills DB
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - nofrills-network
+
+networks:
+  nofrills-network:
+    driver: bridge

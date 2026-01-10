@@ -2,12 +2,11 @@ package com.nofrillsdb.provisioning
 
 import com.nofrillsdb.provisioning.exception.DatabaseAlreadyExistsException
 import com.nofrillsdb.user.exception.CrtNotFoundException
+import com.nofrillsdb.user.exception.DatabaseNotFoundException
 import com.nofrillsdb.user.exception.RoleAlreadyExistsException
 import com.nofrillsdb.user.exception.RoleNotFoundException
-import com.nofrillsdb.user.exception.UserNotFoundException
 import com.nofrillsdb.user.repository.UserRepository
-import com.nofrillsdb.users.model.db.User
-import com.nofrillsdb.utils.JWTUtils
+import com.nofrillsdb.utils.UserUtils
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.ByteArrayResource
@@ -30,6 +29,7 @@ import java.util.zip.ZipOutputStream
 @RequestMapping("/api/provision")
 class ProvisionController(
     @Qualifier("provisionJdbcTemplate") private val jdbcTemplate: JdbcTemplate,
+    private val userUtils: UserUtils,
     private val credentialIssuer: MTLSCredentialIssuer,
     private val userRepository: UserRepository
 ) {
@@ -38,7 +38,7 @@ class ProvisionController(
     private val connectionLimit: Int = 20
 
     @Value("\${provisioning.statement-timeout}")
-    private val statementTimeout: String? = "10s"
+    private val statementTimeout: String = "10s"
 
     @Value("\${provisioning.pool-user}")
     private val poolUser: String = "pgbouncer_auth"
@@ -46,7 +46,7 @@ class ProvisionController(
     @GetMapping("/database")
     @PreAuthorize("isAuthenticated()")
     fun getDatabases(@AuthenticationPrincipal jwt: Jwt): Set<Database> {
-        val user = getUser(jwt)
+        val user = userUtils.getUser(jwt)
         return user.databases
     }
 
@@ -57,9 +57,7 @@ class ProvisionController(
         @AuthenticationPrincipal jwt: Jwt
     ): CreateDBResponse {
 
-        val user = getUser(jwt)
-
-        val dbName = req.name.trim()
+        val user = userUtils.getUser(jwt)
 
         // Password role is the stable base
         val pwdRole = user.role ?: throw RoleNotFoundException("Password role not found (user.role is null)")
@@ -67,6 +65,8 @@ class ProvisionController(
         // Privileges and ownership are tied to pwdRole
         val privRole = "priv_$pwdRole"
         val ownerRole = "owner_$pwdRole"
+        val roleUlid = pwdRole.removePrefix("role_")
+        val dbName = "${req.name.trim()}_$roleUlid"
 
         if (user.databases.any { it.name == dbName }) {
             throw DatabaseAlreadyExistsException("Database $dbName already exists")
@@ -136,7 +136,7 @@ class ProvisionController(
     @GetMapping("/crt")
     @PreAuthorize("isAuthenticated()")
     fun getCertificate(@AuthenticationPrincipal jwt: Jwt): CrtMetadataResponse {
-        val user = getUser(jwt)
+        val user = userUtils.getUser(jwt)
 
         if (user.serial == null || user.fingerprint == null || user.issuedAt == null || user.expiresAt == null) {
             throw CrtNotFoundException("No CRT found for ${user.id}")
@@ -153,7 +153,7 @@ class ProvisionController(
     @PostMapping("/crt")
     @PreAuthorize("isAuthenticated()")
     fun createCert(@AuthenticationPrincipal jwt: Jwt): ResponseEntity<ByteArrayResource> {
-        val user = getUser(jwt)
+        val user = userUtils.getUser(jwt)
 
         // Stable base is password role
         val pwdRole = user.role ?: throw RoleNotFoundException("Password role not found (user.role is null)")
@@ -235,7 +235,7 @@ class ProvisionController(
     @GetMapping("/passwd")
     @PreAuthorize("isAuthenticated()")
     fun createPassword(@AuthenticationPrincipal jwt: Jwt): ResponseEntity<ByteArrayResource> {
-        val user = getUser(jwt)
+        val user = userUtils.getUser(jwt)
 
         // Password role is stable
         val pwdRole = user.role ?: credentialIssuer.generateRoleId()
@@ -301,7 +301,7 @@ class ProvisionController(
     @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.CREATED)
     fun createRole(@AuthenticationPrincipal jwt: Jwt) {
-        val user = getUser(jwt)
+        val user = userUtils.getUser(jwt)
         if (user.role != null) {
             throw RoleAlreadyExistsException("Role ${user.role} already exists")
         }
@@ -342,10 +342,32 @@ class ProvisionController(
         )
     }
 
-    /* =============================================================
-     * Helpers
-     * ============================================================= */
+    @DeleteMapping("/db/{name}")
+    @PreAuthorize("isAuthenticated()")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteDatabase(@AuthenticationPrincipal jwt: Jwt, @PathVariable("name") name: String) {
+        val user = userUtils.getUser(jwt)
+        val db = user.databases.find{it.name == name} ?: throw DatabaseNotFoundException("Database $name not found")
 
+        jdbcTemplate.execute(
+            """REVOKE CONNECT ON DATABASE ${quoteIdent(name)} FROM PUBLIC"""
+        )
+        jdbcTemplate.execute(
+            """
+        SELECT pg_terminate_backend(pid)
+        FROM pg_stat_activity
+        WHERE datname = ${pgLiteral(name)}
+          AND pid <> pg_backend_pid();
+        """.trimIndent()
+        )
+
+        jdbcTemplate.execute(
+            """DROP DATABASE ${quoteIdent(name)}"""
+        )
+
+        user.databases.remove(db)
+        userRepository.save(user)
+    }
     private fun jdbcForDatabase(dbName: String): JdbcTemplate {
         val provisioningHikari = jdbcTemplate.dataSource as com.zaxxer.hikari.HikariDataSource
         val newUrl = replaceJdbcDatabase(provisioningHikari.jdbcUrl, dbName)
@@ -420,11 +442,4 @@ class ProvisionController(
     private fun quoteIdent(ident: String): String = "\"$ident\""
 
     private fun pgLiteral(s: String): String = "'" + s.replace("'", "''") + "'"
-
-    private fun getUser(@AuthenticationPrincipal jwt: Jwt): User {
-        val userId = JWTUtils.getUserId(jwt)
-        return userRepository.findById(userId).orElseThrow {
-            UserNotFoundException("User $userId not found")
-        }
-    }
 }
