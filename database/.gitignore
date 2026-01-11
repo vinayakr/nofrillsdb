@@ -1,3 +1,4 @@
 **/*.crt
 **/*.zip
 **/*.srl
+**/userlist.txt
