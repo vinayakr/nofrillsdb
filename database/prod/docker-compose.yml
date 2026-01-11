@@ -22,7 +22,7 @@ services:
       -c config_file=/etc/postgresql/postgresql.conf
       -c hba_file=/etc/postgresql/pg_hba.conf
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -p 5432"]
+      test: [ "CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -p 5432" ]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -40,7 +40,7 @@ services:
     volumes:
       - ./pgbouncer/pgbouncer_pwd.ini:/etc/pgbouncer/pgbouncer.ini:ro
       - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
-      - ./certs:/certs:ro
+      - pgcerts:/certs:ro
 networks:
   nofrillsdb-network:
     external: true
