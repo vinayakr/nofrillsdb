@@ -1,5 +1,5 @@
 # Use the slim version of OpenJDK 17 based on Debian
-FROM eclipse-temurin:25-jdk-alpine-3.23
+FROM eclipse-temurin:21-jdk-alpine-3.23
 
 # Create a volume at /tmp
 VOLUME /tmp
@@ -7,7 +7,7 @@ VOLUME /tmp
 # Add the JAR file to the container
 ADD build/libs/nofrillsdb.jar nofrillsdb.jar
 
-RUN apt-get update && apt-get install -y tzdata
+RUN apk add --no-cache tzdata
 ENV TZ=America/Los_Angeles
 
 # Copy AWS credentials
