@@ -12,20 +12,24 @@ services:
       nofrillsdb-network:
         ipv4_address: 172.28.1.111
     volumes:
-      - pgdata:/var/lib/postgresql
+      # ✅ data on Linode volume (PG18+ wants /var/lib/postgresql)
+      - /mnt/external_db/pgdata:/var/lib/postgresql
+
+      # certs: source (repo) -> wrapper copies into writable cert dir
       - ./certs:/certs-src:ro
-      - pgcerts:/certs
+      - /mnt/external_db/pgcerts:/certs
+
       - ./pgconf/postgresql.conf:/etc/postgresql/postgresql.conf:ro
       - ./pgconf/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - ./init:/docker-entrypoint-initdb.d:ro
       - ./docker-entrypoint-wrapper.sh:/docker-entrypoint-wrapper.sh:ro
-    entrypoint: [ "/docker-entrypoint-wrapper.sh" ]
+    entrypoint: ["/docker-entrypoint-wrapper.sh"]
     command: >
       postgres
       -c config_file=/etc/postgresql/postgresql.conf
       -c hba_file=/etc/postgresql/pg_hba.conf
     healthcheck:
-      test: [ "CMD-SHELL", "PGSSLMODE=require pg_isready -h 127.0.0.1 -U postgres -p 5432" ]
+      test: ["CMD-SHELL", "PGSSLMODE=require pg_isready -h 127.0.0.1 -U postgres -p 5432"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -43,10 +47,9 @@ services:
     volumes:
       - ./pgbouncer/pgbouncer_pwd.ini:/etc/pgbouncer/pgbouncer.ini:ro
       - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
-      - pgcerts:/certs:ro
+      # ✅ same certs directory on Linode volume (read-only)
+      - /mnt/external_db/pgcerts:/certs:ro
+
 networks:
   nofrillsdb-network:
     external: true
-volumes:
-  pgdata:
-  pgcerts:
