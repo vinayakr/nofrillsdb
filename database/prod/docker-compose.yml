@@ -8,6 +8,9 @@ services:
       POSTGRES_DB: postgres
     ports:
       - "16432:5432"
+    networks:
+      nofrillsdb-network:
+        ipv4_address: 172.28.1.111
     volumes:
       - pgdata:/var/lib/postgresql
       - ./certs:/certs-src:ro
