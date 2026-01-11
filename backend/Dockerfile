@@ -19,11 +19,7 @@ COPY entrypoint.sh entrypoint.sh
 # Make the entrypoint script executable
 RUN chmod +x entrypoint.sh
 
-# Install nc using apt-get package manager
-# Update the package listing, install netcat, then clear out the local repository of retrieved package files to keep the image size down
-RUN apt-get update && \
-    apt-get install -y netcat && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache netcat-openbsd
 
 # Expose port 8443 for the application
 EXPOSE 8080
