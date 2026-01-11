@@ -1,11 +1,11 @@
 # Use the slim version of OpenJDK 17 based on Debian
-FROM openjdk:17.0.1-jdk-slim
+FROM eclipse-temurin:25-jdk-alpine-3.23
 
 # Create a volume at /tmp
 VOLUME /tmp
 
 # Add the JAR file to the container
-ADD build/libs/salefiller.jar salefiller.jar
+ADD build/libs/nofrillsdb.jar nofrillsdb.jar
 
 RUN apt-get update && apt-get install -y tzdata
 ENV TZ=America/Los_Angeles

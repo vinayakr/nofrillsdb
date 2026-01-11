@@ -37,13 +37,30 @@ services:
     environment:
       - AWS_PROFILE=${AWS_PROFILE}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
-  nofrillsdb-redis:
-    image: redis:7
-    ports:
-      - "6379:6379"
+  nofrillsdb-database:
+    build:
+      context: ../postgres
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_USER: nofrillsdb
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: nofrillsdb
+      PGDATA: /var/lib/postgresql/data
+    volumes:
+      - prod_nofrillsdb_database:/var/lib/postgresql/data
     networks:
-      - nofrillsdb-network
-    restart: unless-stopped
+      nofrillsdb-network:
+        ipv4_address: 172.28.1.101
+    ports:
+      - "5432:5432"
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: "172.28.1.100:24224"
+        tag: "nofrillsdb.database"
 networks:
   nofrillsdb-network:
+    external: true
+volumes:
+  prod_nofrillsdb_database:
     external: true
