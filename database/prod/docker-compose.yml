@@ -11,6 +11,8 @@ services:
     networks:
       nofrillsdb-network:
         ipv4_address: 172.28.1.111
+        aliases:
+          - pgbouncer-pwd
     volumes:
       # ✅ data on Linode volume (PG18+ wants /var/lib/postgresql)
       - /mnt/external_db/pgdata:/var/lib/postgresql
@@ -35,6 +37,7 @@ services:
       retries: 20
 
   pgbouncer_pwd:
+    container_name: nofrillsdb-pgbouncer
     image: edoburu/pgbouncer:latest
     depends_on:
       postgres:

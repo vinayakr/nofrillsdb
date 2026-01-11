@@ -7,7 +7,7 @@ spring:
 provisioning:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://pgbouncer_pwd:15432/postgres?sslmode=verify-ca
+    url: jdbc:postgresql://pgbouncer_pwd:5432/postgres
     username: provisioner
     password: ${PROVISIONER_DB_PASSWORD:}
   client-ca-key: ${CLIENT_CA_KEY}
