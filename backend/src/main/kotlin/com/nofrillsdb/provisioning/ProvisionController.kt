@@ -43,6 +43,9 @@ class ProvisionController(
     @Value("\${provisioning.pool-user}")
     private val poolUser: String = "pgbouncer_auth"
 
+    @Value("\${provisioning.client-ca-crt-location}")
+    private val clientCrtLocation: String? = "certs/clients_ca.crt"
+
     @GetMapping("/database")
     @PreAuthorize("isAuthenticated()")
     fun getDatabases(@AuthenticationPrincipal jwt: Jwt): Set<Database> {

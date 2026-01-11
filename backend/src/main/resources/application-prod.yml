@@ -4,18 +4,14 @@ spring:
     password: ${PROD_DB_PASSWORD:}
     url: jdbc:postgresql://nofrillsdb-database:5432/nofrillsdb
     driver-class-name: org.postgresql.Driver
-#provisioning:
-#  datasource:
-#    driver-class-name: org.postgresql.Driver
-#    url: jdbc:postgresql://localhost:16432/postgres?sslmode=verify-ca
-#    username: provisioner
-#    password: ""   # unused with mTLS
-#    hikari:
-#      data-source-properties:
-#        sslrootcert: /Users/vinayakr/workspace/nofrillsdb/database/local/certs/clients_ca.crt
-#        sslcert: /Users/vinayakr/workspace/nofrillsdb/database/local/certs/provisioner.crt
-#        sslkey: /Users/vinayakr/workspace/nofrillsdb/database/local/certs/provisioner.pk8.der
-#  client-ca-key: ${CLIENT_CA_KEY}
-#  connection-limit: 20
-#  statement-timeout: 10s
-#  pool-user: pgbouncer_auth
+provisioning:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:16432/postgres?sslmode=verify-ca
+    username: provisioner
+    password: ${PROVISIONER_DB_PASSWORD:}
+  client-ca-key: ${CLIENT_CA_KEY}
+  client-ca-crt-location: certs/public_clients_ca.crt
+  connection-limit: 20
+  statement-timeout: 10s
+  pool-user: pgbouncer_auth

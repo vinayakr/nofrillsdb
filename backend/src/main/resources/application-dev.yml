@@ -16,6 +16,7 @@ provisioning:
         sslcert: /Users/vinayakr/workspace/nofrillsdb/database/local/certs/provisioner.crt
         sslkey: /Users/vinayakr/workspace/nofrillsdb/database/local/certs/provisioner.pk8.der
   client-ca-key: ${CLIENT_CA_KEY}
+  client-ca-crt-location: certs/clients_ca.crt
   connection-limit: 20
   statement-timeout: 10s
   pool-user: pgbouncer_auth
