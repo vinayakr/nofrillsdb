@@ -25,5 +25,5 @@ RUN apk add --no-cache netcat-openbsd
 EXPOSE 8080
 
 # Define the entrypoint script as the container's entrypoint
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
 
