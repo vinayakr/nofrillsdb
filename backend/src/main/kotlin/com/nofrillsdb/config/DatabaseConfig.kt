@@ -33,13 +33,10 @@ class DatabaseConfig {
     fun provisioningDataSourceProperties() = DataSourceProperties()
 
     @Bean(name = ["provisionDataSource"])
-    @ConfigurationProperties("provisioning.datasource.hikari")
     fun provisionDataSource(
         @Qualifier("provisioningDataSourceProperties") props: DataSourceProperties
     ): DataSource =
-        props.initializeDataSourceBuilder()
-            .type(HikariDataSource::class.java)
-            .build()
+        props.initializeDataSourceBuilder().build()
 
     @Bean
     fun provisionJdbcTemplate(@Qualifier("provisionDataSource") ds: DataSource) =
