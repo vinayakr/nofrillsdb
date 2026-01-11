@@ -10,9 +10,10 @@ services:
       - "16432:5432"
     volumes:
       - pgdata:/var/lib/postgresql
+      - ./certs:/certs-src:ro
+      - pgcerts:/certs
       - ./pgconf/postgresql.conf:/etc/postgresql/postgresql.conf:ro
       - ./pgconf/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
-      - ./certs:/certs:ro
       - ./init:/docker-entrypoint-initdb.d:ro
     command: >
       sh -c '
