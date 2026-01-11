@@ -38,7 +38,6 @@ class DatabaseConfig {
         @Qualifier("provisioningDataSourceProperties") props: DataSourceProperties
     ): DataSource =
         props.initializeDataSourceBuilder()
-            .type(HikariDataSource::class.java)
             .build()
 
     @Bean
