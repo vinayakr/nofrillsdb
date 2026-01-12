@@ -33,6 +33,11 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: "172.28.1.100:24224"
+        tag: "provision.database"
 
   pgbouncer_pwd:
     container_name: nofrillsdb-pgbouncer
@@ -52,7 +57,11 @@ services:
       - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
       # ✅ same certs directory on Linode volume (read-only)
       - /mnt/external_db/pgcerts:/certs:ro
-
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: "172.28.1.100:24224"
+        tag: "provision.pg_bouncer"
 networks:
   nofrillsdb-network:
     external: true
