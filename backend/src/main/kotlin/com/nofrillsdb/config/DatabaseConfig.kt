@@ -41,5 +41,5 @@ class DatabaseConfig {
     @Bean
     fun provisionJdbcTemplate(@Qualifier("provisionDataSource") ds: DataSource) =
         JdbcTemplate(ds)
-    
+
 }
