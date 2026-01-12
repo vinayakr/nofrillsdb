@@ -8,8 +8,8 @@ provisioning:
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://nofrillsdb-database:5432/nofrillsdb
-    username: provisioner
-    password: ${PROVISIONER_DB_PASSWORD:}
+    username: nofrillsdb
+    password: ${PROD_DB_PASSWORD:}
   client-ca-key: ${CLIENT_CA_KEY}
   client-ca-crt-location: certs/public_clients_ca.crt
   connection-limit: 20
