@@ -1,15 +1,35 @@
 services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: "172.28.1.100:24224"
+        tag: "nofrillsdb.caddy"
+    networks:
+      nofrillsdb-network:
+        ipv4_address: 172.28.1.11
+    depends_on:
+      - nofrillsdb-frontend
+
   nofrillsdb-frontend:
     build:
       context: ../../frontend
       dockerfile: Dockerfile
-    ports:
-      - "${PORT}:${PORT}"
-      - "${SECURE_PORT}:${SECURE_PORT}"
+    # ✅ remove public ports; keep internal only
+    expose:
+      - "${PORT}"
     environment:
       - BACKEND_URL=${BACKEND_URL}
       - PORT=${PORT}
-      - SECURE_PORT=${SECURE_PORT}
     logging:
       driver: "fluentd"
       options:
@@ -18,12 +38,14 @@ services:
     networks:
       nofrillsdb-network:
         ipv4_address: 172.28.1.10
+
   nofrillsdb-backend:
     build:
       context: ../../backend
       dockerfile: Dockerfile
-    ports:
-      - "8443:8443"
+    # ✅ remove public port; keep internal only
+    expose:
+      - "8443"
     logging:
       driver: "fluentd"
       options:
@@ -35,6 +57,7 @@ services:
     environment:
       - AWS_PROFILE=${AWS_PROFILE}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+
   nofrillsdb-database:
     build:
       context: ../postgres
@@ -49,16 +72,21 @@ services:
     networks:
       nofrillsdb-network:
         ipv4_address: 172.28.1.101
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
+
     logging:
       driver: "fluentd"
       options:
         fluentd-address: "172.28.1.100:24224"
         tag: "nofrillsdb.database"
+
 networks:
   nofrillsdb-network:
     external: true
+
 volumes:
   prod_nofrillsdb_database:
     external: true
+  caddy_data:
+  caddy_config:

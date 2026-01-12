@@ -1,0 +1,3 @@
+nofrillsdb.com, www.nofrillsdb.com {
+  reverse_proxy nofrillsdb-frontend:3000
+}
