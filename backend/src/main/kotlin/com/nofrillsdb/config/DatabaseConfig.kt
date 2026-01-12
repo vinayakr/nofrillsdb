@@ -40,23 +40,18 @@ class DatabaseConfig {
     @Bean(name = ["provisionDataSource"])
     fun provisionDataSource(
         @Qualifier("provisioningDataSourceProperties") props: DataSourceProperties
-    ): DataSource =
-        props.initializeDataSourceBuilder().build()
+    ): DataSource {
+        log.warn("Provisioning DS props BEFORE build: url='{}' username='{}' driver='{}'",
+            props.url, props.username, props.driverClassName
+        )
+        require(!props.url.isNullOrBlank()) { "Missing provisioning.datasource.url" }
+        return props.initializeDataSourceBuilder()
+            .type(HikariDataSource::class.java)
+            .build()
+    }
 
     @Bean
     fun provisionJdbcTemplate(@Qualifier("provisionDataSource") ds: DataSource) =
         JdbcTemplate(ds)
 
-    @Bean
-    @ConditionalOnBean(name = ["provisioningDataSourceProperties"])
-    fun logProvisioningProps(
-        provisioningDataSourceProperties: DataSourceProperties
-    ) = ApplicationRunner {
-        log.warn(
-            "Provisioning DS props: url='{}' username='{}' driver='{}'",
-            provisioningDataSourceProperties.url,
-            provisioningDataSourceProperties.username,
-            provisioningDataSourceProperties.driverClassName
-        )
-    }
 }
