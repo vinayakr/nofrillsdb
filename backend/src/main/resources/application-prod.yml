@@ -7,7 +7,7 @@ spring:
 provisioning:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://pgbouncer-pwd:5432/postgres
+    url: jdbc:postgresql://nofrillsdb-database:5432/nofrillsdb
     username: provisioner
     password: ${PROVISIONER_DB_PASSWORD:}
   client-ca-key: ${CLIENT_CA_KEY}
