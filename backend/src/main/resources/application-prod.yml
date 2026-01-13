@@ -6,6 +6,13 @@ spring:
     password: ${PROD_DB_PASSWORD:}
     url: jdbc:postgresql://nofrillsdb-database:5432/nofrillsdb
     driver-class-name: org.postgresql.Driver
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://auth.nofrillsdb.com/
+          audiences:
+            - https://api.nofrillsdb.com
 provisioning:
   datasource:
     driver-class-name: org.postgresql.Driver
