@@ -61,6 +61,7 @@ services:
     # ✅ remove public port; keep internal only
     expose:
       - "8080"
+      - "5005"
     logging:
       driver: "fluentd"
       options:
