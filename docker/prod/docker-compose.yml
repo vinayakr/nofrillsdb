@@ -59,7 +59,7 @@ services:
       dockerfile: Dockerfile
     # ✅ remove public port; keep internal only
     expose:
-      - "8443"
+      - "8080"
     logging:
       driver: "fluentd"
       options:
