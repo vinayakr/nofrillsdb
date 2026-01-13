@@ -43,8 +43,11 @@ class MTLSCredentialIssuer {
     @Value("\${provisioning.client-ca-key}")
     val clientCaKey: String? = null
 
+    @Value("\${provisioning.client-ca-crt-location}")
+    private val clientCrtLocation: String? = "certs/clients_ca.crt"
+
     private val caCertPem: String by lazy {
-        ClassPathResource("certs/clients_ca.crt").inputStream.bufferedReader().use { it.readText() }
+        ClassPathResource(clientCrtLocation).inputStream.bufferedReader().use { it.readText() }
     }
 
 
