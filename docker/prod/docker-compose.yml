@@ -24,7 +24,15 @@ services:
     build:
       context: ../../frontend
       dockerfile: Dockerfile
-    # ✅ remove public ports; keep internal only
+      args:
+        VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
+        VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
+        VITE_AUTH0_AUDIENCE: ${VITE_AUTH0_AUDIENCE}
+        VITE_AUTH0_REDIRECT_URL: ${VITE_AUTH0_REDIRECT_URL}
+        VITE_JDBC_PWD_ENDPOINT: ${VITE_JDBC_PWD_ENDPOINT}
+        VITE_JDBC_CRT_ENDPOINT: ${VITE_JDBC_CRT_ENDPOINT}
+        BACKEND_URL: ${BACKEND_URL}
+        PORT: ${PORT}
     expose:
       - "${PORT}"
     environment:

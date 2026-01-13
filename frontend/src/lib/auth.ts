@@ -18,7 +18,7 @@ export async function initAuth0() {
         authorizationParams: {
             audience: import.meta.env.VITE_AUTH0_AUDIENCE,
             scope: 'openid profile email offline_access',
-            redirect_uri: window.location.origin + '/callback'
+            redirect_uri: import.meta.env.VITE_AUTH0_REDIRECT_URL
         },
         cacheLocation: 'localstorage',
         useRefreshTokens: true

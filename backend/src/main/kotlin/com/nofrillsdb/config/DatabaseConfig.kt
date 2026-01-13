@@ -12,9 +12,6 @@ import javax.sql.DataSource
 
 @Configuration
 class DatabaseConfig {
-
-    // --- MAIN APP DB (used by JPA + Flyway) ---
-
     @Bean
     @Primary
     @ConfigurationProperties("spring.datasource")
@@ -24,9 +21,6 @@ class DatabaseConfig {
     @Primary
     fun dataSource(@Qualifier("appDataSourceProperties") props: DataSourceProperties): DataSource =
         props.initializeDataSourceBuilder().build()
-
-
-    // --- PROVISIONING DB (used only by your provisioning controller) ---
 
     @Bean
     @ConfigurationProperties("provisioning.datasource")
