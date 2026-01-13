@@ -7,6 +7,9 @@ services:
       - ENDPOINT=${ENDPOINT}
     ports:
       - "24224:24224"
+      - "24224:24224/udp"
+    volumes:
+      - ./fluent.conf:/fluentd/etc/fluent.conf:ro
     networks:
       nofrillsdb-network:
         ipv4_address: 172.28.1.100
