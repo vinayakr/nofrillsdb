@@ -36,7 +36,6 @@ services:
     expose:
       - "${PORT}"
     environment:
-      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
       - PORT=${PORT}
       - VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN}
       - VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID}
@@ -73,6 +72,7 @@ services:
     environment:
       - AWS_PROFILE=${AWS_PROFILE}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
 
   nofrillsdb-database:
     build:
