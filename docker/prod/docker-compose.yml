@@ -60,7 +60,7 @@ services:
     # ✅ remove public port; keep internal only
     expose:
       - "8080"
-      - "5005"
+#      - "5005"
     logging:
       driver: "fluentd"
       options:
@@ -72,7 +72,7 @@ services:
     environment:
       - AWS_PROFILE=${AWS_PROFILE}
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
-      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+#      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
 
   nofrillsdb-database:
     build:
