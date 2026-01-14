@@ -40,7 +40,11 @@ class GmailService(
         client.newCall(req).execute().use { resp ->
             val body = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) error("Token refresh failed: ${resp.code} $body")
-            return mapper.readTree(body)["access_token"].asText()
+
+            val node = mapper.readTree(body)["access_token"]
+                ?: error("Missing access_token")
+
+            return mapper.treeToValue(node, String::class.java)
         }
     }
 
