@@ -159,4 +159,13 @@
             </div>
         </form>
     </div>
+
+    <div class="mt-8 text-center">
+        <p class="text-sm text-gray-500">
+            You can also reach us directly at
+            <a href="mailto:vinayakr@nofrillsdb.com" class="text-indigo-600 hover:text-indigo-500">
+                vinayakr@nofrillsdb.com
+            </a>
+        </p>
+    </div>
 </div>
