@@ -7,21 +7,29 @@ const staticPaths = [
     '/contact'
 ];
 
-function xml(urls: string[]) {
-    const body = urls
-        .map((path) => `<url><loc>${SITE}${path}</loc></url>`)
+function buildSitemap(paths: string[]): string {
+    const urls = paths
+        .map(
+            (path) => `
+  <url>
+    <loc>${SITE}${path}</loc>
+  </url>`
+        )
         .join('');
+
     return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
-${body}
+${urls}
 </urlset>`;
 }
 
 export const GET: RequestHandler = async () => {
-    return new Response(xml(staticPaths), {
+    return new Response(buildSitemap(staticPaths), {
+        status: 200,
         headers: {
             'Content-Type': 'application/xml; charset=utf-8',
-            'Cache-Control': 'public, max-age=3600'
+            'Cache-Control': 'public, max-age=3600',
+            'X-Content-Type-Options': 'nosniff'
         }
     });
 };
