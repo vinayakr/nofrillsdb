@@ -15,7 +15,9 @@
     "@sveltejs/adapter-node": "^2.1.2",
     "@sveltejs/kit": "^2.47.3",
     "@sveltejs/vite-plugin-svelte": "^5.1.1",
-    "svelte": "^5.42.2"
+    "@tinymce/tinymce-svelte": "^2.0.2",
+    "svelte": "^5.42.2",
+    "tinymce": "^8.3.1"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",

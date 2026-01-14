@@ -59,7 +59,7 @@
     }
 </script>
 
-<nav class="bg-white shadow-lg border-b">
+<nav class="bg-white shadow-lg border-b sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex items-center">
@@ -83,6 +83,9 @@
                             Profile
                         </a>
                     {/if}
+                    <a href="/contact" class="{$page.url.pathname === '/contact' ? 'border-indigo-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'} inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+                        Contact
+                    </a>
                 </div>
             </div>
 
@@ -154,6 +157,9 @@
                     Profile
                 </a>
             {/if}
+            <a href="/contact" class="{$page.url.pathname === '/contact' ? 'bg-indigo-50 border-indigo-500 text-indigo-700' : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'} block pl-3 pr-4 py-2 border-l-4 text-base font-medium">
+                Contact
+            </a>
         </div>
         <div class="pt-4 pb-3 border-t border-gray-200">
             {#if user}

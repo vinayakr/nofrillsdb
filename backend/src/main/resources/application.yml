@@ -16,7 +16,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: https://dev-kt2k7ccik1knq0ig.us.auth0.com/
+          issuer-uri: https://auth.nofrillsdb.com/
           audiences:
             - https://api.nofrillsdb.com
   cloud:
@@ -39,5 +39,7 @@ provisioning:
   datasource:
     hikari:
       maximum-pool-size: 5
-stripe:
-  secret-key: ${STRIPE_SECRET_KEY:}
+gmail:
+  clientId: ${GMAIL_CLIENT_ID}
+  clientSecret: ${GMAIL_CLIENT_SECRET}
+  refreshToken: ${GMAIL_REFRESH_TOKEN}

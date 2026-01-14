@@ -19,7 +19,8 @@ open class SecurityConfig {
         http
             .csrf { it.disable() }
             .authorizeHttpRequests {
-                it.requestMatchers("/api/*").authenticated()
+                it.requestMatchers("/api/contact").permitAll()
+                    .requestMatchers("/api/*").authenticated()
                     .anyRequest().permitAll()
             }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)

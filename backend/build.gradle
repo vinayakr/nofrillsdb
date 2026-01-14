@@ -41,8 +41,15 @@ dependencies {
     implementation 'com.fasterxml.uuid:java-uuid-generator:5.2.0'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
     implementation 'com.stripe:stripe-java:31.1.0'
+    implementation 'com.google.api-client:google-api-client:2.7.0'
+    implementation 'com.google.oauth-client:google-oauth-client-jetty:1.36.0'
+    implementation 'com.google.apis:google-api-services-gmail:v1-rev20230925-2.0.0'
+    implementation 'javax.mail:javax.mail-api:1.6.2'
+    implementation 'com.sun.mail:javax.mail:1.6.2'
     implementation 'org.postgresql:postgresql'
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
+    implementation 'com.squareup.okhttp3:okhttp:5.3.2'
+
 
     testImplementation 'org.mockito.kotlin:mockito-kotlin:6.1.0'
     testImplementation 'org.springframework.boot:spring-boot-test-autoconfigure'

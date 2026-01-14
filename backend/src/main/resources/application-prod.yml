@@ -6,21 +6,16 @@ spring:
     password: ${PROD_DB_PASSWORD:}
     url: jdbc:postgresql://nofrillsdb-database:5432/nofrillsdb
     driver-class-name: org.postgresql.Driver
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: https://auth.nofrillsdb.com/
-          audiences:
-            - https://api.nofrillsdb.com
 provisioning:
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://pgbouncer-pwd:5432/postgres
     username: provisioner
-    password: ${PROVISIONER_DB_PASSWORD:}
-  client-ca-key: ${CLIENT_CA_KEY}
+    password: ${PROD_PROVISIONER_DB_PASSWORD:}
+  client-ca-key: ${PROD_CLIENT_CA_KEY}
   client-ca-crt-location: certs/public_clients_ca.crt
   connection-limit: 20
   statement-timeout: 10s
   pool-user: pgbouncer_auth
+stripe:
+  secret-key: ${PROD_STRIPE_SECRET_KEY:}

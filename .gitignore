@@ -11,3 +11,4 @@ gradle
 **/*.key
 **/*.csr
 **/*.der
+**/credentials.json
