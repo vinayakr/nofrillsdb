@@ -4,7 +4,8 @@ const SITE = 'https://nofrillsdb.com';
 
 const staticPaths = [
     '/',
-    '/contact'
+    '/contact',
+    '/about'
 ];
 
 function buildSitemap(paths: string[]): string {
