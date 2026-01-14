@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types';
 
-const SITE = 'https://yourdomain.com';
+const SITE = 'https://nofrillsdb.com';
 
 const staticPaths = [
     '/',
