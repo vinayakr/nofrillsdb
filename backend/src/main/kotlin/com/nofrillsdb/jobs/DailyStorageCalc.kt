@@ -19,7 +19,7 @@ class DailyStorageCalc (
 
     private val logger = LoggerFactory.getLogger(DailyStorageCalc::class.java)
 
-    @Scheduled(cron = "0 5 0 * * *", zone = "UTC")
+    @Scheduled(cron = "0 5 0 * * *")
     fun updateDailySizes() {
         val yesterday = LocalDate.now().minusDays(1)
         logger.info("Starting daily storage calculation for date: $yesterday")

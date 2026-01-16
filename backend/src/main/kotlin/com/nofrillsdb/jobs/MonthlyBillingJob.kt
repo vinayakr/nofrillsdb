@@ -29,7 +29,7 @@ class MonthlyBillingJob(
         private const val MIN_CHARGE_CENTS = 500L // $5.00 minimum charge
     }
 
-    @Scheduled(cron = "0 5 1 * * ?") // Run at 1:05 AM on the 1st day of every month
+    @Scheduled(cron = "0 5 1 1 * ?") // Run at 1:05 AM on the 1st day of every month
     fun processMonthlyBilling() {
         logger.info("Starting monthly billing job...")
 
