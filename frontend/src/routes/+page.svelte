@@ -19,6 +19,10 @@
     function handleSignUp() {
         signUp();
     }
+
+    function handleTryDemo() {
+        goto('/demo');
+    }
 </script>
 
 <svelte:head>
@@ -53,9 +57,17 @@
                 >
                     {isAuthenticated ? 'Go to Dashboard' : 'Start Free'}
                 </button>
-                <div class="text-sm text-gray-500">
-                    Unlimited databases • First 100MB free • No credit card required
-                </div>
+                {#if !isAuthenticated}
+                    <button
+                        on:click={handleTryDemo}
+                        class="bg-white hover:bg-gray-50 text-indigo-600 border-2 border-indigo-300 px-8 py-4 rounded-lg text-lg font-semibold transition-colors shadow-sm"
+                    >
+                        Try Demo
+                    </button>
+                {/if}
+            </div>
+            <div class="mt-3 text-sm text-gray-500">
+                Unlimited databases • First 100MB free • No credit card required
             </div>
         </div>
     </div>
@@ -341,9 +353,15 @@
             >
                 Sign Up Free
             </button>
-            <div class="text-indigo-200 text-sm">
-                No credit card required • Free 100MB to start
-            </div>
+            <button
+                on:click={handleTryDemo}
+                class="bg-indigo-500 hover:bg-indigo-400 text-white border border-indigo-400 px-8 py-4 rounded-lg text-lg font-semibold transition-colors"
+            >
+                Try Demo First
+            </button>
+        </div>
+        <div class="mt-3 text-indigo-200 text-sm">
+            No credit card required • Free 100MB to start
         </div>
     </div>
 </section>
