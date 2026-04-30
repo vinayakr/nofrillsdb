@@ -82,6 +82,30 @@ class DemoController(
                 jdbcTemplate.execute("""RESET ROLE""")
             }
 
+<<<<<<< Updated upstream
+=======
+            // Revoke the demo role's access to every database it is not supposed to use.
+            // PUBLIC has CONNECT on postgres by default; revoke it explicitly for this role
+            // so it cannot be used as a backdoor even if PUBLIC grants remain.
+            jdbcTemplate.execute(
+                """
+                DO $$
+                DECLARE
+                    db TEXT;
+                BEGIN
+                    FOR db IN
+                        SELECT datname FROM pg_database
+                        WHERE datname != ${pgLiteral(dbName)}
+                          AND NOT datistemplate
+                    LOOP
+                        EXECUTE 'REVOKE CONNECT ON DATABASE ' || quote_ident(db) || ' FROM ${quoteIdent(role)}';
+                    END LOOP;
+                END
+                $$;
+                """.trimIndent()
+            )
+
+>>>>>>> Stashed changes
             val dbJdbc = jdbcForDatabase(dbName)
             try {
                 dbJdbc.execute("""REVOKE ALL ON SCHEMA public FROM PUBLIC""")
