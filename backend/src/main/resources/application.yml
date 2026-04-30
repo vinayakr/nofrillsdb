@@ -39,6 +39,10 @@ provisioning:
   datasource:
     hikari:
       maximum-pool-size: 5
+demo:
+  storage-limit-bytes: 104857600   # 100MB — warning email threshold
+  storage-grace-bytes: 52428800    # 50MB grace — revoke access at 150MB
+  max-active-sessions: 200
 gmail:
   clientId: ${GMAIL_CLIENT_ID}
   clientSecret: ${GMAIL_CLIENT_SECRET}

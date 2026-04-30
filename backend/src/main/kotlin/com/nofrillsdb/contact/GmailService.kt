@@ -48,6 +48,69 @@ class GmailService(
         }
     }
 
+    fun sendDemoSessionCreatedEmail(databaseName: String, role: String) {
+        val html = """
+            <p><b>New demo session started</b></p>
+            <p>Database: <code>${escape(databaseName)}</code></p>
+            <p>Role: <code>${escape(role)}</code></p>
+        """.trimIndent()
+
+        val raw = buildRawEmail(
+            from = sender,
+            to = sender,
+            replyTo = "vinayakr@nofrillsdb.com",
+            subject = "New demo session: $databaseName",
+            htmlBody = html
+        )
+
+        val json = mapper.writeValueAsString(mapOf("raw" to raw))
+        val reqBody = json.toRequestBody("application/json".toMediaType())
+
+        val req = Request.Builder()
+            .url("https://gmail.googleapis.com/gmail/v1/users/me/messages/send")
+            .addHeader("Authorization", "Bearer ${accessToken()}")
+            .post(reqBody)
+            .build()
+
+        client.newCall(req).execute().use { resp ->
+            val body = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) error("Send failed: ${resp.code} $body")
+        }
+    }
+
+    fun sendDemoStorageWarningEmail(databaseName: String, role: String, sizeBytes: Long, limitBytes: Long) {
+        val sizeMb = sizeBytes / (1024.0 * 1024.0)
+        val limitMb = limitBytes / (1024.0 * 1024.0)
+        val html = """
+            <p><b>Demo storage warning</b></p>
+            <p>Database <code>${escape(databaseName)}</code> (role: <code>${escape(role)}</code>) has exceeded the 500 MB demo limit.</p>
+            <p>Current size: <b>${"%.1f".format(sizeMb)} MB</b> / limit: ${"%.0f".format(limitMb)} MB</p>
+            <p>The session remains active. Review and clean up manually if needed.</p>
+        """.trimIndent()
+
+        val raw = buildRawEmail(
+            from = sender,
+            to = sender,
+            replyTo = "vinayakr@nofrillsdb.com",
+            subject = "Demo storage limit exceeded: $databaseName",
+            htmlBody = html
+        )
+
+        val json = mapper.writeValueAsString(mapOf("raw" to raw))
+        val reqBody = json.toRequestBody("application/json".toMediaType())
+
+        val req = Request.Builder()
+            .url("https://gmail.googleapis.com/gmail/v1/users/me/messages/send")
+            .addHeader("Authorization", "Bearer ${accessToken()}")
+            .post(reqBody)
+            .build()
+
+        client.newCall(req).execute().use { resp ->
+            val body = resp.body?.string().orEmpty()
+            if (!resp.isSuccessful) error("Send failed: ${resp.code} $body")
+        }
+    }
+
     fun sendContactEmail(replyTo: String, name: String, messageText: String) {
         val html = """
       <p><b>From:</b> ${escape(name)} (${escape(replyTo)})</p>

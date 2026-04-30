@@ -20,6 +20,8 @@ open class SecurityConfig {
             .csrf { it.disable() }
             .authorizeHttpRequests {
                 it.requestMatchers("/api/contact").permitAll()
+                    .requestMatchers("/api/demo").permitAll()
+                    .requestMatchers("/api/demo/**").permitAll()
                     .requestMatchers("/api/*").authenticated()
                     .anyRequest().permitAll()
             }
